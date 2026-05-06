@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Danger Tournaments</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 16px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: var(--tg-theme-hint-color, #666666);
+            font-size: 14px;
+        }
+        
+        .menu-item {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .menu-item:active {
+            transform: scale(0.98);
+            opacity: 0.8;
+        }
+        
+        .menu-icon {
+            font-size: 28px;
+        }
+        
+        .menu-text {
+            flex: 1;
+        }
+        
+        .menu-title {
+            font-size: 17px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .menu-subtitle {
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #666666);
+        }
+        
+        .button {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 12px;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .info-card {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        
+        .info-card.show {
+            display: block;
+        }
+        
+        .back-button {
+            background: transparent;
+            border: 1px solid var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-color, #2481cc);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <!-- Главное меню -->
+        <div id="main-menu">
+            <div class="header">
+                <h1>🎮 Danger Tournaments</h1>
+                <p>Турниры по Brawl Stars</p>
+            </div>
+            
+            <div class="menu-item" onclick="sendAction('tournaments')">
+                <div class="menu-icon">🎮</div>
+                <div class="menu-text">
+                    <div class="menu-title">О турнирах</div>
+                    <div class="menu-subtitle">Правила и расписание</div>
+                </div>
+            </div>
+            
+            <div class="menu-item" onclick="sendAction('profile')">
+                <div class="menu-icon">🎩</div>
+                <div class="menu-text">
+                    <div class="menu-title">Мой профиль</div>
+                    <div class="menu-subtitle">Статистика и достижения</div>
+                </div>
+            </div>
+            
+            <div class="menu-item" onclick="sendAction('achievements')">
+                <div class="menu-icon">🎯</div>
+                <div class="menu-text">
+                    <div class="menu-title">Ачивки</div>
+                    <div class="menu-subtitle">Задания и награды</div>
+                </div>
+            </div>
+            
+            <div class="menu-item" onclick="sendAction('vip')">
+                <div class="menu-icon">💎</div>
+                <div class="menu-text">
+                    <div class="menu-title">VIP</div>
+                    <div class="menu-subtitle">Привилегии</div>
+                </div>
+            </div>
+            
+            <div class="menu-item" onclick="sendAction('support')">
+                <div class="menu-icon">📞</div>
+                <div class="menu-text">
+                    <div class="menu-title">Поддержка</div>
+                    <div class="menu-subtitle">Связаться с админом</div>
+                </div>
+            </div>
+            
+            <button class="button" onclick="closeApp()">Закрыть</button>
+        </div>
+        
+        <!-- Информационная карточка -->
+        <div id="info-card" class="info-card">
+            <div id="info-content"></div>
+            <button class="button back-button" onclick="backToMenu()">◀️ Назад</button>
+        </div>
+    </div>
+    
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        // Данные пользователя (если есть)
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+            console.log('User:', user);
+        }
+        
+        function sendAction(action) {
+            // Отправляем данные в бота
+            tg.sendData(JSON.stringify({
+                action: action,
+                user_id: user?.id,
+                username: user?.username
+            }));
+            
+            // Показываем информационную карточку
+            showInfoCard(action);
+        }
+        
+        function showInfoCard(action) {
+            const mainMenu = document.getElementById('main-menu');
+            const infoCard = document.getElementById('info-card');
+            const infoContent = document.getElementById('info-content');
+            
+            let content = '';
+            switch(action) {
+                case 'tournaments':
+                    content = '<h3>🎮 О турнирах</h3><p>Информация отправлена в бот!</p><p>Закройте приложение и проверьте чат с ботом.</p>';
+                    break;
+                case 'profile':
+                    content = '<h3>🎩 Мой профиль</h3><p>Запрос отправлен в бот!</p><p>Закройте приложение - бот пришлет ваш профиль.</p>';
+                    break;
+                case 'achievements':
+                    content = '<h3>🎯 Ачивки</h3><p>Запрос отправлен в бот!</p><p>Список ачивок придет в чат.</p>';
+                    break;
+                case 'vip':
+                    content = '<h3>💎 VIP</h3><p>Информация о VIP отправлена в бот.</p>';
+                    break;
+                case 'support':
+                    content = '<h3>📞 Поддержка</h3><p>Свяжитесь с администратором: @Defhooll</p>';
+                    break;
+                default:
+                    content = '<p>Данные отправлены в бот.</p>';
+            }
+            
+            infoContent.innerHTML = content;
+            mainMenu.style.display = 'none';
+            infoCard.classList.add('show');
+            
+            // Закрываем приложение через 2 секунды (чтобы пользователь увидел карточку)
+            setTimeout(() => {
+                tg.close();
+            }, 2000);
+        }
+        
+        function backToMenu() {
+            const mainMenu = document.getElementById('main-menu');
+            const infoCard = document.getElementById('info-card');
+            
+            mainMenu.style.display = 'block';
+            infoCard.classList.remove('show');
+        }
+        
+        function closeApp() {
+            tg.close();
+        }
+    </script>
+</body>
+</html>
